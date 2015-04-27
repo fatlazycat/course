@@ -31,7 +31,12 @@ Empty <+> o = o
 k <+> _     = k
 
 applyOptional :: Optional (a -> b) -> Optional a -> Optional b
-applyOptional f a = bindOptional (\f' -> mapOptional (\a' -> f' a') a) f
+applyOptional f x = bindOptional (\f' -> mapOptional (\x' -> f' x') x) f
+
+-- mapOption (a -> b) (Optional a) => x' is a
+-- \f' -> Optional b
+-- bindOptional (\f' -> Optional b) (Optional (a -> b))
+-- f is Optional (a -> b)
 
 twiceOptional :: (a -> b -> c) -> Optional a -> Optional b -> Optional c
 twiceOptional f = applyOptional . mapOptional f
@@ -41,17 +46,12 @@ contains _ Empty = False
 contains a (Full z) = a == z
 
 instance P.Functor Optional where
-  fmap =
-    M.liftM
+  fmap = M.liftM
 
 instance A.Applicative Optional where
-  (<*>) =
-    M.ap
-  pure =
-    Full
+  (<*>) = M.ap
+  pure = Full
 
 instance P.Monad Optional where
-  (>>=) =
-    flip bindOptional
-  return =
-    Full
+  (>>=) = flip bindOptional
+  return = Full

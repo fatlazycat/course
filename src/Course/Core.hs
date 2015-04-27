@@ -58,7 +58,7 @@ import Prelude(
   , Num(..)
   , Bool(..)
   , Either(..)
-  , Char
+  -- , Char
   , Int
   , Integer
   , IO
