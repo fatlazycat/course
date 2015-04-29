@@ -19,10 +19,7 @@ import qualified Prelude as P
 --   `∀a b c. ((.) <$> a <*> b <*> c) ≅ (a <*> (b <*> c))`
 class Functor f => Apply f where
   -- Pronounced apply.
-  (<*>) ::
-    f (a -> b)
-    -> f a
-    -> f b
+  (<*>) :: f (a -> b) -> f a -> f b
 
 infixl 4 <*>
 
@@ -31,24 +28,17 @@ infixl 4 <*>
 -- >>> Id (+10) <*> Id 8
 -- Id 18
 instance Apply Id where
-  (<*>) ::
-    Id (a -> b)
-    -> Id a
-    -> Id b
-  (<*>) =
-    error "todo"
+  (<*>) :: Id (a -> b) -> Id a -> Id b
+  (<*>) (Id f) = (<$>) f
 
 -- | Implement @Apply@ instance for @List@.
 --
 -- >>> (+1) :. (*2) :. Nil <*> 1 :. 2 :. 3 :. Nil
 -- [2,3,4,2,4,6]
 instance Apply List where
-  (<*>) ::
-    List (a -> b)
-    -> List a
-    -> List b
-  (<*>) =
-    error "todo"
+  (<*>) :: List (a -> b) -> List a -> List b
+  (<*>) Nil _ = Nil
+  (<*>) (f :. fs) xs = (map f xs) ++ (fs <*> xs)
 
 -- | Implement @Apply@ instance for @Optional@.
 --
@@ -61,12 +51,8 @@ instance Apply List where
 -- >>> Full (+8) <*> Empty
 -- Empty
 instance Apply Optional where
-  (<*>) ::
-    Optional (a -> b)
-    -> Optional a
-    -> Optional b
-  (<*>) =
-    error "todo"
+  (<*>) :: Optional (a -> b) -> Optional a -> Optional b
+  (<*>) = applyOptional
 
 -- | Implement @Apply@ instance for reader.
 --
@@ -85,12 +71,8 @@ instance Apply Optional where
 -- >>> ((*) <*> (+2)) 3
 -- 15
 instance Apply ((->) t) where
-  (<*>) ::
-    ((->) t (a -> b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (<*>) =
-    error "todo"
+  (<*>) :: ((->) t (a -> b)) -> ((->) t a) -> ((->) t b)
+  (<*>) f g = \x -> f x (g x)
 
 -- | Apply a binary function in the environment.
 --
@@ -111,14 +93,8 @@ instance Apply ((->) t) where
 --
 -- >>> lift2 (+) length sum (listh [4,5,6])
 -- 18
-lift2 ::
-  Apply f =>
-  (a -> b -> c)
-  -> f a
-  -> f b
-  -> f c
-lift2 =
-  error "todo"
+lift2 :: Apply f => (a -> b -> c) -> f a -> f b -> f c
+lift2 f a b = f <$> a <*> b
 
 -- | Apply a ternary function in the environment.
 --
@@ -142,15 +118,8 @@ lift2 =
 --
 -- >>> lift3 (\a b c -> a + b + c) length sum product (listh [4,5,6])
 -- 138
-lift3 ::
-  Apply f =>
-  (a -> b -> c -> d)
-  -> f a
-  -> f b
-  -> f c
-  -> f d
-lift3 =
-  error "todo"
+lift3 :: Apply f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+lift3 f a b c = lift2 f a b <*> c
 
 -- | Apply a quaternary function in the environment.
 --
@@ -174,16 +143,8 @@ lift3 =
 --
 -- >>> lift4 (\a b c d -> a + b + c + d) length sum product (sum . filter even) (listh [4,5,6])
 -- 148
-lift4 ::
-  Apply f =>
-  (a -> b -> c -> d -> e)
-  -> f a
-  -> f b
-  -> f c
-  -> f d
-  -> f e
-lift4 =
-  error "todo"
+lift4 :: Apply f => (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
+lift4 f a b c d = lift3 f a b c <*> d
 
 -- | Sequence, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -203,13 +164,8 @@ lift4 =
 -- prop> [a,b,c] *> [x,y,z] == [x,y,z,x,y,z,x,y,z]
 --
 -- prop> Full x *> Full y == Full y
-(*>) ::
-  Apply f =>
-  f a
-  -> f b
-  -> f b
-(*>) =
-  error "todo"
+(*>) :: Apply f => f a -> f b -> f b
+(*>) f g = (const id) <$> f <*> g
 
 -- | Sequence, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -229,34 +185,21 @@ lift4 =
 -- prop> [x,y,z] <* [a,b,c] == [x,x,x,y,y,y,z,z,z]
 --
 -- prop> Full x <* Full y == Full x
-(<*) ::
-  Apply f =>
-  f b
-  -> f a
-  -> f b
-(<*) =
-  error "todo"
+(<*) :: Apply f => f a -> f b -> f a
+(<*) f g = const <$> f <*> g
 
 -----------------------
 -- SUPPORT LIBRARIES --
 -----------------------
 
 instance Apply IO where
-  f <*> a =
-    f P.>>= \f' -> P.fmap f' a
+  f <*> a = f P.>>= \f' -> P.fmap f' a
 
 instance Apply [] where
-  f <*> a =
-    f P.>>= \f' -> P.fmap f' a
+  f <*> a = f P.>>= \f' -> P.fmap f' a
 
 instance Apply P.Maybe where
-  f <*> a =
-    f P.>>= \f' -> P.fmap f' a
+  f <*> a = f P.>>= \f' -> P.fmap f' a
 
-(>>) ::
-  Apply f =>
-  f a
-  -> f b
-  -> f b
-(>>) =
-  (*>)
+(>>) :: Apply f => f a -> f b -> f b
+(>>) = (*>)
