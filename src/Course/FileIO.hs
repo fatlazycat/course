@@ -60,43 +60,23 @@ the contents of c
 -}
 
 -- /Tip:/ use @getArgs@ and @run@
-main ::
-  IO ()
-main =
-  error "todo"
+main :: IO ()
+main = error "todo"
 
-type FilePath =
-  Chars
+type FilePath = Chars
 
 -- /Tip:/ Use @getFiles@ and @printFiles@.
-run ::
-  Chars
-  -> IO ()
-run =
-  error "todo"
+run :: Chars -> IO ()
+run = error "todo"
 
-getFiles ::
-  List FilePath
-  -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo"
+getFiles :: List FilePath -> IO (List (FilePath,Chars))
+getFiles = error "todo"
 
-getFile ::
-  FilePath
-  -> IO (FilePath, Chars)
-getFile =
-  error "todo"
+getFile :: FilePath -> IO (FilePath,Chars)
+getFile = error "todo"
 
-printFiles ::
-  List (FilePath, Chars)
-  -> IO ()
-printFiles =
-  error "todo"
+printFiles :: List (FilePath,Chars) -> IO ()
+printFiles xs = void $ sequence $ map (uncurry printFile) xs
 
-printFile ::
-  FilePath
-  -> Chars
-  -> IO ()
-printFile =
-  error "todo"
-
+printFile :: FilePath -> Chars -> IO ()
+printFile f txt = putStrLn (txt ++ f) >> readFile f >>= putStrLn
