@@ -70,7 +70,7 @@ instance Applicative Optional where
 -- prop> pure x y == x
 instance Applicative ((->) t) where
   pure :: a -> ((->) t a)
-  pure x = \_ -> x
+  pure x _ = x
 
 -- | Sequences a list of structures to a structure of list.
 --

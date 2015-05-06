@@ -111,7 +111,7 @@ length = foldLeft (\acc _ -> acc + 1) 0
 -- prop> map id x == x
 map :: (a -> b) -> List a -> List b
 map _ Nil = Nil
-map f (x :. xs )= (f x) :. map f xs
+map f (x :. xs) = f x :. map f xs
 
 -- | Return elements satisfying the given predicate.
 --
