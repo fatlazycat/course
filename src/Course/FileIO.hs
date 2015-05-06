@@ -70,13 +70,17 @@ run :: Chars -> IO ()
 run = error "todo"
 
 getFiles :: List FilePath -> IO (List (FilePath,Chars))
-getFiles = error "todo"
+getFiles xs = sequence $ map getFile xs
 
 getFile :: FilePath -> IO (FilePath,Chars)
-getFile = error "todo"
+-- getFile f = do
+--   txt <- readFile f
+--   return (f, txt)
+getFile f = (,) f <$> readFile f
+-- getFile = lift2 (<$>) (,) readFile
 
 printFiles :: List (FilePath,Chars) -> IO ()
 printFiles xs = void $ sequence $ map (uncurry printFile) xs
 
 printFile :: FilePath -> Chars -> IO ()
-printFile f txt = putStrLn (txt ++ f) >> readFile f >>= putStrLn
+printFile f txt = putStrLn ("============ " ++ f) >> putStrLn txt
