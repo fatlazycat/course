@@ -61,26 +61,22 @@ the contents of c
 
 -- /Tip:/ use @getArgs@ and @run@
 main :: IO ()
-main = error "todo"
+main = headOr "" <$> getArgs >>= run
 
 type FilePath = Chars
 
 -- /Tip:/ Use @getFiles@ and @printFiles@.
 run :: Chars -> IO ()
-run = error "todo"
+run f = (lines . snd <$> getFile f) >>= getFiles >>= printFiles
 
 getFiles :: List FilePath -> IO (List (FilePath,Chars))
 getFiles xs = sequence $ map getFile xs
 
 getFile :: FilePath -> IO (FilePath,Chars)
--- getFile f = do
---   txt <- readFile f
---   return (f, txt)
 getFile f = (,) f <$> readFile f
--- getFile = lift2 (<$>) (,) readFile
 
 printFiles :: List (FilePath,Chars) -> IO ()
 printFiles xs = void $ sequence $ map (uncurry printFile) xs
 
 printFile :: FilePath -> Chars -> IO ()
-printFile f txt = putStrLn ("============ " ++ f) >> putStrLn txt
+printFile f txt = putStrLn ("***============ " ++ f) >> putStrLn txt
