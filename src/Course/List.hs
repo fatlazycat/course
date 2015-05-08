@@ -590,14 +590,11 @@ readFloat =
   mapOptional fst . readFloats
 
 instance IsString (List Char) where
-  fromString =
-    listh
+  fromString = listh
 
-type Chars =
-  List Char
+type Chars = List Char
 
-type Filename =
-  Chars
+type Filename = Chars
 
 strconcat ::
   [Chars]
@@ -605,18 +602,12 @@ strconcat ::
 strconcat =
   P.concatMap hlist
 
-stringconcat ::
-  [P.String]
-  -> P.String
-stringconcat =
-  P.concat
+stringconcat :: [P.String] -> P.String
+stringconcat = P.concat
 
-show' ::
-  Show a =>
-  a
-  -> List Char
-show' =
-  listh . show
+show' :: Show a
+      => a -> List Char
+show' = listh . show
 
 instance P.Functor List where
   fmap =
