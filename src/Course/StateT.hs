@@ -26,23 +26,15 @@ import qualified Prelude as P
 
 -- | A `StateT` is a function from a state value `s` to a functor f of (a produced value `a`, and a resulting state `s`).
 newtype StateT s f a =
-  StateT {
-    runStateT ::
-      s
-      -> f (a, s)
-  }
+  StateT {runStateT :: s -> f (a,s)}
 
 -- | Implement the `Functor` instance for @StateT s f@ given a @Functor f@.
 --
 -- >>> runStateT ((+1) <$> (pure 2) :: StateT Int List Int) 0
 -- [(3,0)]
 instance Functor f => Functor (StateT s f) where
-  (<$>) ::
-    (a -> b)
-    -> StateT s f a
-    -> StateT s f b
-  (<$>) =
-    error "todo"
+  (<$>) :: (a -> b) -> StateT s f a -> StateT s f b
+  (<$>) fn (StateT k) = StateT (\s -> first fn <$> k s)
 
 -- | Implement the `Apply` instance for @StateT s f@ given a @Bind f@.
 --
@@ -56,12 +48,12 @@ instance Functor f => Functor (StateT s f) where
 -- >>> runStateT (StateT (\s -> ((+2), s P.++ [1]) :. ((+3), s P.++ [1]) :. Nil) <*> (StateT (\s -> (2, s P.++ [2]) :. Nil))) [0]
 -- [(4,[0,1,2]),(5,[0,1,2])]
 instance Bind f => Apply (StateT s f) where
-  (<*>) ::
-    StateT s f (a -> b)
-    -> StateT s f a
-    -> StateT s f b
-  (<*>) =
-    error "todo"
+  (<*>) :: StateT s f (a -> b) -> StateT s f a -> StateT s f b
+  (<*>) (StateT f) (StateT a) = StateT (\s -> f s >>= (\(g, t) -> first g <$> a t))
+
+-- f s == f (a->b, s)
+-- (\(g, t) -> (\(z, u) -> (g z, u)) <$> a t) == (a->b,s) -> f(b,s)
+-- a t == f (a, s)
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Applicative f@.
 --
@@ -71,11 +63,8 @@ instance Bind f => Apply (StateT s f) where
 -- >>> runStateT ((pure 2) :: StateT Int List Int) 0
 -- [(2,0)]
 instance Monad f => Applicative (StateT s f) where
-  pure ::
-    a
-    -> StateT s f a
-  pure =
-    error "todo"
+  pure :: a -> StateT s f a
+  pure a = StateT(\s -> pure (a,s))
 
 -- | Implement the `Bind` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
