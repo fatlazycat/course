@@ -134,13 +134,15 @@ putT s = StateT(\_ -> pure ((),s))
 -- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
 distinct' :: (Ord a,Num a)
           => List a -> List a
-distinct' as = fst $ runState' (filterOutDuplicates' as) S.empty
+distinct' as = eval' (filterOutDuplicates' as) S.empty
 
 filterOutDuplicates' :: (Ord a, Monad f) => List a -> StateT (S.Set a) f (List a)
 filterOutDuplicates' = filtering checkForDuplicate'
 
 checkForDuplicate' :: (Ord a, Monad f) => a -> StateT (S.Set a) f Bool
-checkForDuplicate' x = StateT(pure . (S.notMember x &&& S.insert x))
+checkForDuplicate' x =
+  StateT (pure .
+          (S.notMember x &&& S.insert x))
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
@@ -155,11 +157,14 @@ checkForDuplicate' x = StateT(pure . (S.notMember x &&& S.insert x))
 -- Empty
 distinctF :: (Ord a,Num a)
           => List a -> Optional (List a)
--- distinctF = runStateT (filtering checkForItemGreater100 >>= checkForDuplicate') S.empty 
-distinctF = undefined
-
-checkForItemGreater100 :: (Ord a, Num a) => a -> Optional a
-checkForItemGreater100 a = if a < 100 then Full a else Empty
+distinctF as =
+  evalT (filtering (\a ->
+                      StateT (\s ->
+                                if a > 100
+                                   then Empty
+                                   else Full (S.notMember a s,S.insert a s)))
+                   as)
+        S.empty
 
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
