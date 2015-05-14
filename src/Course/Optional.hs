@@ -31,7 +31,7 @@ Empty <+> o = o
 k <+> _     = k
 
 applyOptional :: Optional (a -> b) -> Optional a -> Optional b
-applyOptional f x = bindOptional (\f' -> mapOptional (\x' -> f' x') x) f
+applyOptional f x = bindOptional (\f' -> mapOptional f' x) f
 
 -- mapOption (a -> b) (Optional a) => x' is a
 -- \f' -> Optional b

@@ -1,23 +1,23 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Course.StateT where
 
-import Course.Core
-import Course.Id
-import Course.Optional
-import Course.List
-import Course.Functor
-import Course.Apply
-import Course.Applicative
-import Course.Bind
-import Course.Monad
-import Course.State
-import qualified Data.Set as S
-import qualified Prelude as P
+import           Course.Applicative
+import           Course.Apply
+import           Course.Bind
+import           Course.Core
+import           Course.Functor
+import           Course.Id
+import           Course.List
+import           Course.Monad
+import           Course.Optional
+import           Course.State
+import qualified Data.Set           as S
+import qualified Prelude            as P
 
 -- $setup
 -- >>> import Test.QuickCheck
@@ -175,25 +175,39 @@ data OptionalT f a =
 -- >>> runOptionalT $ (+1) <$> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty]
 instance Functor f => Functor (OptionalT f) where
-  (<$>) = error "todo"
+  (<$>) f (OptionalT a) = OptionalT((\x -> f <$> x) <$> a )
+
+-- (a->b) -> OptionalT f a -> OptionalT f b
 
 -- | Implement the `Apply` instance for `OptionalT f` given a Apply f.
 --
--- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
+-- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> aOptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance Apply f => Apply (OptionalT f) where
-  (<*>) = error "todo"
+  (<*>) (OptionalT f) (OptionalT a) = OptionalT(fn <*> a)
+    where fn = (<*>) <$> f
+
+-- OptionalT f(a->b) -> OptionalT f a -> OptionalT f b
+-- f == f(Optional(a->b))
+-- a == f(Optional(a))
+-- <*> == f (a -> b) -> f a -> f b
+-- (<*>) <$> f ==  f(Optional a -> Optional b)
+-- (<*>) <$> f ==  (f(a -> b) -> f a -> f b) <$> f(Optional(a->b))
+-- in above f(a->b) becomes Optional(a->b)
 
 -- | Implement the `Applicative` instance for `OptionalT f` given a Applicative f.
 instance Applicative f => Applicative (OptionalT f) where
-  pure = error "todo"
+  pure a = OptionalT(pure (Full a))
 
 -- | Implement the `Bind` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Bind (OptionalT f) where
-  (=<<) = error "todo"
+  (=<<) f (OptionalT a) = undefined
+
+-- (=<<) :: (a -> f b) -> f a -> f b
+-- (=<<) :: (a -> OptionalT f b) -> OptionalT f a -> OptionalT f b
 
 instance Monad f => Monad (OptionalT f) where
 
