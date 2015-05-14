@@ -181,7 +181,7 @@ instance Functor f => Functor (OptionalT f) where
 
 -- | Implement the `Apply` instance for `OptionalT f` given a Apply f.
 --
--- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> aOptionalT (Full 1 :. Empty :. Nil)
+-- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance Apply f => Apply (OptionalT f) where
   (<*>) (OptionalT f) (OptionalT a) = OptionalT(fn <*> a)
@@ -204,7 +204,10 @@ instance Applicative f => Applicative (OptionalT f) where
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Bind (OptionalT f) where
-  (=<<) f (OptionalT a) = undefined
+  (=<<) f (OptionalT a) = OptionalT ((\oa -> case oa of
+                            Empty -> pure Empty
+                            Full a' -> runOptionalT (f a')
+                          ) =<< a)
 
 -- (=<<) :: (a -> f b) -> f a -> f b
 -- (=<<) :: (a -> OptionalT f b) -> OptionalT f a -> OptionalT f b
@@ -222,21 +225,21 @@ data Logger l a =
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance Functor (Logger l) where
-  (<$>) = error "todo"
+  (<$>) f (Logger l a) = Logger l (f a)
 
 -- | Implement the `Apply` instance for `Logger`.
 --
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance Apply (Logger l) where
-  (<*>) = error "todo"
+  (<*>) (Logger x y) (Logger x' y') = Logger (x ++ x') (y y')
 
 -- | Implement the `Applicative` instance for `Logger`.
 --
 -- >>> pure "table" :: Logger Int P.String
 -- Logger [] "table"
 instance Applicative (Logger l) where
-  pure = error "todo"
+  pure = Logger Nil
 
 -- | Implement the `Bind` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -244,7 +247,9 @@ instance Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance Bind (Logger l) where
-  (=<<) = error "todo"
+  (=<<) fn (Logger l a) = Logger l id <*> fn a
+
+-- (a -> logger l b) -> logger l a -> logger l b
 
 instance Monad (Logger l) where
 
@@ -253,7 +258,7 @@ instance Monad (Logger l) where
 -- >>> log1 1 2
 -- Logger [1] 2
 log1 :: l -> a -> Logger l a
-log1 = error "todo"
+log1 l = Logger (l :. Nil)
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
