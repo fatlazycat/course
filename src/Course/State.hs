@@ -20,7 +20,6 @@ import qualified Data.Set as S
 -- >>> import Test.QuickCheck.Function
 -- >>> import Data.List(nub)
 -- >>> import Test.QuickCheck
--- (a->b) -> OptionalT f a -> OptionalT f b
 -- >>> import qualified Prelude as P(fmap)
 -- >>> import Course.Core
 -- >>> import Course.List
