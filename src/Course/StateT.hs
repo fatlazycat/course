@@ -161,7 +161,7 @@ distinctF as =
   evalT (filtering (\a ->
                       StateT (\s ->
                                 if a > 100
-                                   then Empty
+                                   then Empty 
                                    else Full (S.notMember a s,S.insert a s)))
                    as)
         S.empty
@@ -276,4 +276,16 @@ log1 l = Logger (l :. Nil)
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
 distinctG :: (Integral a,Show a)
           => List a -> Logger Chars (Optional (List a))
-distinctG = error "todo"
+distinctG as =
+  runOptionalT (evalT (filtering predicate as) S.empty)
+
+predicate :: (Integral a,Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
+predicate a =
+  StateT (\s ->
+            if a > 100
+               then OptionalT (log1 ("aborting > 100: " ++
+                                     fromString (show a))
+                                    Empty)
+               else OptionalT (log1 ("number: " ++
+                                     fromString (show a))
+                                    (Full (S.notMember a s,S.insert a s))))
