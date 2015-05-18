@@ -71,5 +71,4 @@ instance Extend Optional where
 -- Empty
 cojoin :: Extend f
        => f a -> f (f a)
--- cojoin _ = undefined
 cojoin = (<<=) id
