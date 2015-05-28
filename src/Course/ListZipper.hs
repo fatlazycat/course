@@ -363,6 +363,12 @@ moveLeftN n lz@(ListZipper xs a ys)
   where endOfList = reverse (take (n - 1) xs) ++ (a :. ys)
         (focus :. startOfList) = drop (n - 1) xs
 
+-- moveLeftN :: Int -> ListZipper a -> MaybeListZipper a
+-- moveLeftN n lz@(ListZipper xs a ys)
+--   | n == 0 = IsZ lz
+--   | n < 0 = moveRightN (abs n) lz
+--   | otherwise = moveLeftN (pred n) -<< moveLeft lz
+
 -- | Move the focus right the given number of positions. If the value is negative, move left instead.
 --
 -- >>> moveRightN 1 (zipper [2,1,0] 3 [4,5,6])
@@ -374,7 +380,6 @@ moveLeftN n lz@(ListZipper xs a ys)
 -- >>> moveRightN (-1) $ zipper [2,1,0] 3 [4,5,6]
 -- [1,0] >2< [3,4,5,6]
 moveRightN :: Int -> ListZipper a -> MaybeListZipper a
--- moveRightN = error "todo"
 moveRightN n lz@(ListZipper xs a ys)
   | n == 0 = IsZ lz
   | n < 0 = moveLeftN (abs n) lz
@@ -411,7 +416,17 @@ moveRightN n lz@(ListZipper xs a ys)
 -- >>> moveLeftN' (-4) (zipper [5,4,3,2,1] 6 [7,8,9])
 -- Left 3
 moveLeftN' :: Int -> ListZipper a -> Either Int (ListZipper a)
-moveLeftN' = error "todo"
+moveLeftN' n z@(ListZipper xs a ys)
+  | n > length xs = Left (length xs)
+  | n == 0 = Right z
+  | n < 0 =
+    moveRightN' (abs n)
+                z
+  | otherwise =
+    moveLeftN' (pred n)
+               (ListZipper l focus r)
+  where (focus :. l) = xs
+        r = a :. ys
 
 -- | Move the focus right the given number of positions. If the value is negative, move left instead.
 -- If the focus cannot be moved, the given number of times, return the value by which it can be moved instead.
@@ -431,7 +446,17 @@ moveLeftN' = error "todo"
 -- >>> moveRightN' (-4) (zipper [3,2,1] 4 [5,6,7])
 -- Left 3
 moveRightN' :: Int -> ListZipper a -> Either Int (ListZipper a)
-moveRightN' = error "todo"
+moveRightN' n z@(ListZipper xs a ys)
+  | n > length ys = Left (length ys)
+  | n == 0 = Right z
+  | n < 0 =
+    moveLeftN' (abs n)
+               z
+  | otherwise =
+    moveRightN' (pred n)
+                (ListZipper l focus r)
+  where l = a :. xs
+        (focus :. r) = ys
 
 -- | Move the focus to the given absolute position in the zipper. Traverse the zipper only to the extent required.
 --
