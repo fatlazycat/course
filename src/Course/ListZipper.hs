@@ -350,6 +350,10 @@ dropRights (ListZipper xs a _) = ListZipper xs a Nil
 --
 -- >>> moveLeftN (-1) $ zipper [2,1,0] 3 [4,5,6]
 -- [3,2,1,0] >4< [5,6]
+--
+-- >>> moveLeftN 5 (zipper [6,5,4,3,2,1] 7 [])
+-- [1] >2< [3,4,5,6,7]
+--
 moveLeftN :: Int -> ListZipper a -> MaybeListZipper a
 moveLeftN n lz@(ListZipper xs a ys)
   | n == 0 = IsZ lz
@@ -379,17 +383,24 @@ moveLeftN n lz@(ListZipper xs a ys)
 --
 -- >>> moveRightN (-1) $ zipper [2,1,0] 3 [4,5,6]
 -- [1,0] >2< [3,4,5,6]
+--
+-- >>> moveRightN 4 (zipper [5,4,3,2,1] 6 [7,8,9])
+-- ><
+--
+-- >>> moveRightN 5 (zipper [] 1 [2,3,4,5,6,7])
+-- [5,4,3,2,1] >6< [7]
+--
 moveRightN :: Int -> ListZipper a -> MaybeListZipper a
 moveRightN n lz@(ListZipper xs a ys)
   | n == 0 = IsZ lz
   | n < 0 = moveLeftN (abs n) lz
-  | n > length xs  = IsNotZ
+  | n > length ys  = IsNotZ
   | otherwise =
     IsZ (ListZipper
            startOfList
            focus
            endOfList)
-  where startOfList = take (n-1) ys ++ (a :. xs)
+  where startOfList = reverse (take (n-1) ys) ++ (a :. xs)
         (focus :. endOfList) = drop (n-1) ys
 
 -- | Move the focus left the given number of positions. If the value is negative, move right instead.
@@ -416,17 +427,13 @@ moveRightN n lz@(ListZipper xs a ys)
 -- >>> moveLeftN' (-4) (zipper [5,4,3,2,1] 6 [7,8,9])
 -- Left 3
 moveLeftN' :: Int -> ListZipper a -> Either Int (ListZipper a)
-moveLeftN' n z@(ListZipper xs a ys)
-  | n > length xs = Left (length xs)
-  | n == 0 = Right z
-  | n < 0 =
-    moveRightN' (abs n)
-                z
+moveLeftN' n z
+  | n < 0 = moveRightN' (negate n) z
   | otherwise =
-    moveLeftN' (pred n)
-               (ListZipper l focus r)
-  where (focus :. l) = xs
-        r = a :. ys
+    case x of
+      IsNotZ -> Left (length (lefts z))
+      IsZ x' -> Right x'
+  where x = moveLeftN n z
 
 -- | Move the focus right the given number of positions. If the value is negative, move left instead.
 -- If the focus cannot be moved, the given number of times, return the value by which it can be moved instead.
@@ -446,17 +453,13 @@ moveLeftN' n z@(ListZipper xs a ys)
 -- >>> moveRightN' (-4) (zipper [3,2,1] 4 [5,6,7])
 -- Left 3
 moveRightN' :: Int -> ListZipper a -> Either Int (ListZipper a)
-moveRightN' n z@(ListZipper xs a ys)
-  | n > length ys = Left (length ys)
-  | n == 0 = Right z
-  | n < 0 =
-    moveLeftN' (abs n)
-               z
+moveRightN' n z
+  | n < 0 = moveLeftN' (negate n) z
   | otherwise =
-    moveRightN' (pred n)
-                (ListZipper l focus r)
-  where l = a :. xs
-        (focus :. r) = ys
+    case x of
+      IsNotZ -> Left (length (rights z))
+      IsZ x' -> Right x'
+  where x = moveRightN n z
 
 -- | Move the focus to the given absolute position in the zipper. Traverse the zipper only to the extent required.
 --
@@ -468,17 +471,30 @@ moveRightN' n z@(ListZipper xs a ys)
 --
 -- >>> nth 8 (zipper [3,2,1] 4 [5,6,7])
 -- ><
+--
+-- >>> nth 1 (zipper [] 1 [2,3])
+-- [1] >2< [3]
+--
 nth :: Int -> ListZipper a -> MaybeListZipper a
-nth = error "todo"
+nth n z@(ListZipper Nil _ _) = moveRightN n z
+nth n (ListZipper xs@( _ :. _ ) a ys) = moveRightN n (ListZipper Nil focus (xs' ++ (a :. ys)))
+  where (focus :. xs') = reverse xs
 
 -- | Return the absolute position of the current focus in the zipper.
 --
 -- >>> index (zipper [3,2,1] 4 [5,6,7])
 -- 3
 --
+-- >>> index (zipper [] 4 [5,6,7])
+-- 0
+--
+-- >>> index (zipper [-2] 0 [-1,2])
+-- 1
+--
 -- prop> optional True (\z' -> index z' == i) (toOptional (nth i z))
 index :: ListZipper a -> Int
-index = error "todo"
+index (ListZipper Nil _ _) = 0
+index z = length $ lefts z
 
 -- | Move the focus to the end of the zipper.
 --
