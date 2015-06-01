@@ -505,9 +505,17 @@ index z = length $ lefts z
 --
 -- prop> rights (end lz) == Nil
 end :: ListZipper a -> ListZipper a
-end = error "todo"
+end z@(ListZipper _ _ Nil) = z
+end (ListZipper xs a ys) =
+  ListZipper front focus Nil
+  where (focus :. front) =
+          reverse ys ++
+          (a :. xs)
 
 -- | Move the focus to the start of the zipper.
+--
+-- >>> start (zipper [] 4 [5,6,7])
+-- [] >4< [5,6,7]
 --
 -- >>> start (zipper [3,2,1] 4 [5,6,7])
 -- [] >1< [2,3,4,5,6,7]
@@ -516,7 +524,10 @@ end = error "todo"
 --
 -- prop> lefts (start lz) == Nil
 start :: ListZipper a -> ListZipper a
-start = error "todo"
+start z@(ListZipper Nil _ _) = z
+start (ListZipper xs a ys) = ListZipper Nil focus (xs' ++ (a :. ys))
+  where (focus :. xs') = reverse xs
+
 
 -- | Delete the current focus and pull the left values to take the empty position.
 --
@@ -526,7 +537,8 @@ start = error "todo"
 -- >>> deletePullLeft (zipper [] 1 [2,3,4])
 -- ><
 deletePullLeft :: ListZipper a -> MaybeListZipper a
-deletePullLeft = error "todo"
+deletePullLeft (ListZipper Nil _ _) = IsNotZ
+deletePullLeft (ListZipper (x :. xs) _ ys) = IsZ (ListZipper xs x ys)
 
 -- | Delete the current focus and pull the right values to take the empty position.
 --
@@ -535,11 +547,9 @@ deletePullLeft = error "todo"
 --
 -- >>> deletePullRight (zipper [3,2,1] 4 [])
 -- ><
-deletePullRight ::
-  ListZipper a
-  -> MaybeListZipper a
-deletePullRight =
-  error "todo"
+deletePullRight :: ListZipper a -> MaybeListZipper a
+deletePullRight (ListZipper _ _ Nil) = IsNotZ
+deletePullRight (ListZipper xs _ (y :. ys)) = IsZ (ListZipper xs y ys)
 
 -- | Insert at the current focus and push the left values to make way for the new position.
 --
@@ -551,7 +561,7 @@ deletePullRight =
 --
 -- prop> optional False (==z) (toOptional (deletePullLeft (insertPushLeft i z)))
 insertPushLeft :: a -> ListZipper a -> ListZipper a
-insertPushLeft = error "todo"
+insertPushLeft f (ListZipper xs a ys) = ListZipper (a :. xs) f ys
 
 -- | Insert at the current focus and push the right values to make way for the new position.
 --
@@ -563,7 +573,7 @@ insertPushLeft = error "todo"
 --
 -- prop> optional False (==z) (toOptional (deletePullRight (insertPushRight i z)))
 insertPushRight :: a -> ListZipper a -> ListZipper a
-insertPushRight = error "todo"
+insertPushRight f (ListZipper xs a ys) = ListZipper xs f (a :. ys)
 
 -- | Implement the `Apply` instance for `ListZipper`.
 -- This implementation zips functions with values by function application.
