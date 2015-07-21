@@ -133,7 +133,7 @@ asMaybeZipper f (IsZ z) = f z
 -- >>> toList (ListZipper (3:.2:.1:.Nil) 4 (5:.6:.7:.Nil))
 -- [1,2,3,4,5,6,7]
 toList :: ListZipper a -> List a
-toList (ListZipper xs a ys) = (reverse xs) ++ (a :. ys)
+toList (ListZipper xs a ys) = reverse xs ++ (a :. ys)
 
 -- | Convert the given (maybe) zipper back to a list.
 toListZ :: MaybeListZipper a -> List a
@@ -583,7 +583,7 @@ insertPushRight f (ListZipper xs a ys) = ListZipper xs f (a :. ys)
 -- >>> zipper [(+2), (+10)] (*2) [(*3), (4*), (5+)] <*> zipper [3,2,1] 4 [5,6,7]
 -- [5,12] >8< [15,24,12]
 instance Apply ListZipper where
-  (<*>) = error "todo"
+  (<*>) (ListZipper xs a ys) (ListZipper xs' a' ys') = ListZipper (zipWith id xs xs') (a a') (zipWith id ys ys')
 
 -- | Implement the `Apply` instance for `MaybeListZipper`.
 --
@@ -601,7 +601,8 @@ instance Apply ListZipper where
 -- >>> IsNotZ <*> IsNotZ
 -- ><
 instance Apply MaybeListZipper where
-  (<*>) = error "todo"
+  (<*>) (IsZ a) (IsZ b) = IsZ (a <*> b)
+  (<*>) _ _ = IsNotZ
 
 -- | Implement the `Applicative` instance for `ListZipper`.
 -- This implementation produces an infinite list zipper (to both left and right).
@@ -612,7 +613,7 @@ instance Apply MaybeListZipper where
 --
 -- prop> all . (==) <*> take n . rights . pure
 instance Applicative ListZipper where
-  pure = error "todo"
+  pure x = ListZipper (produce id x) x (produce id x)
 
 -- | Implement the `Applicative` instance for `MaybeListZipper`.
 --
@@ -622,17 +623,27 @@ instance Applicative ListZipper where
 --
 -- prop> let is (IsZ z) = z in all . (==) <*> take n . rights . is . pure
 instance Applicative MaybeListZipper where
-  pure = error "todo"
+  pure x = IsZ (pure x)
 
 -- | Implement the `Extend` instance for `ListZipper`.
 -- This implementation "visits" every possible zipper value derivable from a given zipper (i.e. all zippers to the left and right).
 --
 -- /Tip:/ Use @List#unfoldr@.
+-- unfoldr :: (a -> Optional (b,a)) -> a -> List b
 --
 -- >>> id <<= (zipper [2,1] 3 [4,5])
 -- [[1] >2< [3,4,5],[] >1< [2,3,4,5]] >[2,1] >3< [4,5]< [[3,2,1] >4< [5],[4,3,2,1] >5< []]
 instance Extend ListZipper where
-  (<<=) = error "todo"
+  -- (<<=) :: (f a -> b) -> f a -> f b
+  -- (<<=) (ListZipper a -> b) -> (ListZipper a)
+  f <<= z =
+    ListZipper
+      (unfoldr ((<$>) (\z' -> (f z',z')) . toOptional . moveLeft)
+               z)
+      (f z)
+      (unfoldr ((<$>) (\z' -> (f z',z')) .
+                toOptional . moveRight)
+               z)
 
 -- | Implement the `Extend` instance for `MaybeListZipper`.
 -- This instance will use the `Extend` instance for `ListZipper`.
@@ -644,7 +655,9 @@ instance Extend ListZipper where
 -- >>> id <<= (IsZ (zipper [2,1] 3 [4,5]))
 -- [[1] >2< [3,4,5],[] >1< [2,3,4,5]] >[2,1] >3< [4,5]< [[3,2,1] >4< [5],[4,3,2,1] >5< []]
 instance Extend MaybeListZipper where
-  (<<=) = error "todo"
+  -- (<<=) (MaybeListZipper a -> b) -> (MaybeListZipper a)
+  _ <<= IsNotZ = IsNotZ
+  f <<= (IsZ z) = IsZ (f . IsZ <<= z)
 
 -- | Implement the `Comonad` instance for `ListZipper`.
 -- This implementation returns the current focus of the zipper.
@@ -652,7 +665,7 @@ instance Extend MaybeListZipper where
 -- >>> copure (zipper [2,1] 3 [4,5])
 -- 3
 instance Comonad ListZipper where
-  copure = error "todo"
+  copure (ListZipper _ x _) = x
 
 -- | Implement the `Traversable` instance for `ListZipper`.
 -- This implementation traverses a zipper while running some `Applicative` effect through the zipper.
@@ -664,7 +677,8 @@ instance Comonad ListZipper where
 -- >>> traverse id (zipper [Full 1, Full 2, Full 3] (Full 4) [Empty, Full 6, Full 7])
 -- Empty
 instance Traversable ListZipper where
-  traverse = error "todo"
+  traverse f (ListZipper l x r) =
+    (ListZipper . reverse) <$> traverse f (reverse l) <*> f x <*> traverse f r
 
 -- | Implement the `Traversable` instance for `MaybeListZipper`.
 --
@@ -676,7 +690,10 @@ instance Traversable ListZipper where
 -- >>> traverse id (IsZ (zipper [Full 1, Full 2, Full 3] (Full 4) [Full 5, Full 6, Full 7]))
 -- Full [1,2,3] >4< [5,6,7]
 instance Traversable MaybeListZipper where
-  traverse = error "todo"
+  traverse _ IsNotZ =
+    pure IsNotZ
+  traverse f (IsZ z) =
+    IsZ <$> traverse f z
 
 -----------------------
 -- SUPPORT LIBRARIES --
