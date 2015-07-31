@@ -94,12 +94,8 @@ character = P (\x -> case x of
 --
 -- >>> parse (mapParser (+10) (valueParser 7)) ""
 -- Result >< 17
-mapParser ::
-  (a -> b)
-  -> Parser a
-  -> Parser b
-mapParser =
-  error "todo"
+mapParser :: (a -> b) -> Parser a -> Parser b
+mapParser = error "todo"
 
 -- | This is @mapParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
